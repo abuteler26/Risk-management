@@ -195,6 +195,7 @@
       </div>
       <div class="btn-row">
   	<button class="secondary" type="button" id="resetBtn">Reset Game</button>
+    <button class="secondary" type="button" id="submitScoreBtn">Submit my score</button>
       </div>
 
     </div>
@@ -253,6 +254,9 @@
   const betHeadsBtn = document.getElementById("betHeadsBtn");
   const betTailsBtn = document.getElementById("betTailsBtn");
   const resetBtn = document.getElementById("resetBtn");
+  const submitScoreBtn = document.getElementById("submitScoreBtn");
+  const FORM_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-k25swTMWYIefGHWB-8od_SAP5dW_4ueusifBrzCtDx70zqrPypXt4Vl_oyE0ferDvcPsv2phtCMm/pubhtml?gid=709538798&single=true";
+    
 
   // --- Helpers ---
   function updateDisplays() {
@@ -384,6 +388,11 @@
     setMessage("New game. Choose heads or tails and a bet size to start.", "neutral");
     updateDisplays();
   });
+
+    // Open the Google Form for score submission
+submitScoreBtn.addEventListener("click", function () {
+  window.open(FORM_URL, "_blank");
+});
 
   // initial render
   updateDisplays();
