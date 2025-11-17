@@ -220,7 +220,7 @@
   <script>
     const HEADS_PROB = 0.6;
     const START_BANKROLL = 10;
-    const TARGET = 250;
+    const MAX_ROUNDS = 100;
 
     let bankroll = START_BANKROLL;
     let round = 0;
@@ -259,21 +259,33 @@
       logEl.prepend(row);
     }
 
-    function endGame(win) {
-      betHeadsBtn.disabled = true;
-      betTailsBtn.disabled = true;
-      if (win) {
-        setMessage(`🎉 You reached $${bankroll.toFixed(2)} in ${round} rounds!`, "win");
-      } else {
-        setMessage(`💀 You went bust in ${round} rounds.`, "lose");
-      }
-    }
+    function endGame(reason) {
+  betHeadsBtn.disabled = true;
+  betTailsBtn.disabled = true;
 
-    function playRound(choice) {
-      if (bankroll <= 0.01) {
-        endGame(false);
-        return;
-      }
+  if (reason === "bust") {
+    setMessage("💀 You went bust in " + round + " rounds.", "lose");
+  } else if (reason === "maxRounds") {
+    setMessage("⏱️ 100 flips done. Final bankroll: $" + bankroll.toFixed(2) + ".", "win");
+  }
+}
+
+    updateDisplays();
+
+// stop if bust
+  if (bankroll <= 0.01) {
+    bankroll = 0;
+    updateDisplays();
+    endGame("bust");
+    return;
+  }
+
+// stop after 100 flips
+  if (round >= MAX_ROUNDS) {
+    endGame("maxRounds");
+    return;
+  }
+
 
       const fraction = parseInt(fractionSlider.value, 10) / 100;
       if (fraction <= 0) {
