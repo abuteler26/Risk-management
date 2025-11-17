@@ -224,6 +224,7 @@
 
     let bankroll = START_BANKROLL;
     let round = 0;
+
     const bankrollDisplay = document.getElementById("bankrollDisplay");
     const roundDisplay = document.getElementById("roundDisplay");
     const fractionSlider = document.getElementById("fractionSlider");
@@ -243,3 +244,110 @@
       messageEl.textContent = text;
       messageEl.className = "message " + type;
     }
+
+    function addLogEntry({ round, choice, outcome, bet, bankrollAfter }) {
+      const row = document.createElement("div");
+      row.classList.add("log-entry");
+      row.classList.add(outcome === "WIN" ? "win" : "lose");
+      row.innerHTML = `
+        <span>#${round}</span>
+        <span>${choice}</span>
+        <span>${outcome}</span>
+        <span>Bet $${bet.toFixed(2)}</span>
+        <span>→ $${bankrollAfter.toFixed(2)}</span>
+      `;
+      logEl.prepend(row);
+    }
+
+    function endGame(win) {
+      betHeadsBtn.disabled = true;
+      betTailsBtn.disabled = true;
+      if (win) {
+        setMessage(`🎉 You reached $${bankroll.toFixed(2)} in ${round} rounds!`, "win");
+      } else {
+        setMessage(`💀 You went bust in ${round} rounds.`, "lose");
+      }
+    }
+
+    function playRound(choice) {
+      if (bankroll <= 0.01) {
+        endGame(false);
+        return;
+      }
+
+      const fraction = parseInt(fractionSlider.value, 10) / 100;
+      if (fraction <= 0) {
+        setMessage("Set a positive bet fraction first.", "neutral");
+        return;
+      }
+      if (fraction > 1) return;
+
+      const betAmount = bankroll * fraction;
+      if (betAmount <= 0.01) {
+        setMessage("Your bet is too small to matter — increase the fraction.", "neutral");
+        return;
+      }
+
+      round += 1;
+
+      const flipIsHeads = Math.random() < HEADS_PROB;
+      const flipResult = flipIsHeads ? "Heads" : "Tails";
+      const guessedCorrectly =
+        (choice === "Heads" && flipIsHeads) || (choice === "Tails" && !flipIsHeads);
+
+      if (guessedCorrectly) {
+        bankroll += betAmount;
+        setMessage(`✅ ${flipResult}! You won $${betAmount.toFixed(2)}.`, "win");
+        addLogEntry({
+          round,
+          choice,
+          outcome: "WIN",
+          bet: betAmount,
+          bankrollAfter: bankroll,
+        });
+      } else {
+        bankroll -= betAmount;
+        setMessage(`❌ ${flipResult}. You lost $${betAmount.toFixed(2)}.`, "lose");
+        addLogEntry({
+          round,
+          choice,
+          outcome: "LOSE",
+          bet: betAmount,
+          bankrollAfter: bankroll,
+        });
+      }
+
+      updateDisplays();
+
+      if (bankroll >= TARGET) {
+        endGame(true);
+      } else if (bankroll <= 0.01) {
+        bankroll = 0;
+        updateDisplays();
+        endGame(false);
+      }
+    }
+
+    fractionSlider.addEventListener("input", () => {
+      const val = parseInt(fractionSlider.value, 10);
+      fractionLabel.textContent = val + "%";
+    });
+
+    betHeadsBtn.addEventListener("click", () => playRound("Heads"));
+    betTailsBtn.addEventListener("click", () => playRound("Tails"));
+
+    resetBtn.addEventListener("click", () => {
+      bankroll = START_BANKROLL;
+      round = 0;
+      logEl.innerHTML = "";
+      betHeadsBtn.disabled = false;
+      betTailsBtn.disabled = false;
+      setMessage("New game. Choose heads or tails and a bet size to start.", "neutral");
+      updateDisplays();
+    });
+
+    // initial render
+    updateDisplays();
+  </script>
+</body>
+</html>
