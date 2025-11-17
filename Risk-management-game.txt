@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Biased Coin Betting Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #0b1020;
+      color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      background: #171c32;
+      border-radius: 18px;
+      padding: 1.5rem;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-top: 0;
+      margin-bottom: 0.25rem;
+      text-align: center;
+    }
+    h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-top: 0;
+      margin-bottom: 1.25rem;
+      opacity: 0.8;
+      text-align: center;
+    }
+    .label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+      margin-bottom: 0.35rem;
+    }
+    .bankroll {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .pill {
+      font-size: 0.8rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .pill span {
+      opacity: 0.9;
+    }
+    .controls {
+      margin-top: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      flex: 1;
+      border: none;
+      padding: 0.6rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: #2e365c;
+      color: #f5f5f5;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.1s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+    button.secondary {
+      background: #232848;
+      flex: 0 0 auto;
+    }
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+    .message {
+      margin-top: 0.75rem;
+      min-height: 1.4rem;
+      font-size: 0.95rem;
+    }
+    .message.win {
+      color: #4ade80;
+    }
+    .message.lose {
+      color: #f97373;
+    }
+    .message.neutral {
+      color: #e5e7eb;
+    }
+    .log {
+      margin-top: 1rem;
+      max-height: 220px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+      padding: 0.75rem;
+      font-size: 0.78rem;
+    }
+    .log-entry {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .log-entry span {
+      white-space: nowrap;
+    }
+    .log-entry.win {
+      color: #bbf7d0;
+    }
+    .log-entry.lose {
+      color: #fecaca;
+    }
+    .footer {
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      opacity: 0.7;
+      text-align: center;
+    }
+    .highlight {
+      color: #facc15;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Biased Coin Betting Game</h1>
+    <h2>Heads = 60% • Tails = 40% • Start: $10 • Goal: $250</h2>
+
+    <div class="status-row">
+      <div>
+        <div class="label">Bankroll</div>
+        <div class="bankroll" id="bankrollDisplay">$10.00</div>
+      </div>
+      <div>
+        <div class="label">Round</div>
+        <div class="pill"><span id="roundDisplay">0</span></div>
+      </div>
+      <div>
+        <div class="label">Target</div>
+        <div class="pill">$250 or bust</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="label">Bet fraction of bankroll</div>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" value="20" id="fractionSlider" />
+        <span id="fractionLabel">20%</span>
+      </div>
+      <div class="btn-row">
+        <button class="secondary" type="button" id="kellyBtn">Set Kelly (20%)</button>
+        <button class="secondary" type="button" id="resetBtn">Reset Game</button>
+      </div>
+    </div>
+
+    <div class="label">Make your call</div>
+    <div class="btn-row">
+      <button type="button" id="betHeadsBtn">Bet on Heads</button>
+      <button type="button" id="betTailsBtn">Bet on Tails</button>
+    </div>
+
+    <div id="message" class="message neutral">
+      Choose heads or tails and a bet size to start.
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <div class="footer">
+      Tip: With p = 60% on heads and even odds, the
+      <span class="highlight">Kelly fraction</span> is ~20% on heads each round.
+    </div>
+  </div>
+
+  <script>
+    const HEADS_PROB = 0.6;
+    const START_BANKROLL = 10;
+    const TARGET = 250;
+
+    let bankroll = START_BANKROLL;
+    let round = 0;
+    const bankrollDisplay = document.getElementById("bankrollDisplay");
+    const roundDisplay = document.getElementById("roundDisplay");
+    const fractionSlider = document.getElementById("fractionSlider");
+    const fractionLabel = document.getElementById("fractionLabel");
+    const messageEl = document.getElementById("message");
+    const logEl = document.getElementById("log");
+    const betHeadsBtn = document.getElementById("betHeadsBtn");
+    const betTailsBtn = document.getElementById("betTailsBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const kellyBtn = document.getElementById("kellyBtn");
+
+    function updateDisplays() {
+      bankrollDisplay.textContent = "$" + bankroll.toFixed(2);
+      roundDisplay.textContent = round;
+    }
+
+    function setMessage(text, type = "neutral") {
+      messageEl.textContent = text;
+      messageEl.className = "message " + type;
+    }
+
+    function addLogEntry({ round, choice, outcome, bet, bankrollAfter }) {
+      const row = document.createElement("div");
+      row.classList.add("log-entry");
+      row.classList.add(outcome === "WIN" ? "win" : "lose");
+      row.innerHTML = `
+        <span>#${round}</span>
+        <span>${choice}</span>
+        <span>${outcome}</span>
+        <span>Bet $${bet.toFixed(2)}</span>
+        <span>→ $${bankrollAfter.toFixed(2)}</span>
+      `;
+      logEl.prepend(row);
+    }
+
+    function endGame(win) {
+      betHeadsBtn.disabled = true;
+      betTailsBtn.disabled = true;
+      if (win) {
+        setMessage(`🎉 You reached $${bankroll.toFixed(2)} in ${round} rounds!`, "win");
+      } else {
+        setMessage(`💀 You went bust in ${round} rounds.`, "lose");
+      }
+    }
+
+    function playRound(choice) {
+      if (bankroll <= 0.01) {
+        endGame(false);
+        return;
+      }
+
+      const fraction = parseInt(fractionSlider.value, 10) / 100;
+      if (fraction <= 0) {
+        setMessage("Set a positive bet fraction first.", "neutral");
+        return;
+      }
+      if (fraction > 1) return;
+
+      const betAmount = bankroll * fraction;
+      if (betAmount <= 0.01) {
+        setMessage("Your bet is too small to matter — increase the fraction.", "neutral");
+        return;
+      }
+
+      round += 1;
+
+      const flipIsHeads = Math.random() < HEADS_PROB;
+      const flipResult = flipIsHeads ? "Heads" : "Tails";
+      const guessedCorrectly =
+        (choice === "Heads" && flipIsHeads) || (choice === "Tails" && !flipIsHeads);
+
+      if (guessedCorrectly) {
+        bankroll += betAmount; // even-money payoff
+        setMessage(`✅ ${flipResult}! You won $${betAmount.toFixed(2)}.`, "win");
+        addLogEntry({
+          round,
+          choice,
+          outcome: "WIN",
+          bet: betAmount,
+          bankrollAfter: bankroll,
+        });
+      } else {
+        bankroll -= betAmount;
+        setMessage(`❌ ${flipResult}. You lost $${betAmount.toFixed(2)}.`, "lose");
+        addLogEntry({
+          round,
+          choice,
+          outcome: "LOSE",
+          bet: betAmount,
+          bankrollAfter: bankroll,
+        });
+      }
+
+      updateDisplays();
+
+      if (bankroll >= TARGET) {
+        endGame(true);
+      } else if (bankroll <= 0.01) {
+        bankroll = 0;
+        updateDisplays();
+        endGame(false);
+      }
+    }
+
+    fractionSlider.addEventListener("input", () => {
+      const val = parseInt(fractionSlider.value, 10);
+      fractionLabel.textContent = val + "%";
+    });
+
+    betHeadsBtn.addEventListener("click", () => playRound("Heads"));
+    betTailsBtn.addEventListener("click", () => playRound("Tails"));
+
+    resetBtn.addEventListener("click", () => {
+      bankroll = START_BANKROLL;
+      round = 0;
+      logEl.innerHTML = "";
+      betHeadsBtn.disabled = false;
+      betTailsBtn.disabled = false;
+      setMessage("New game. Choose heads or tails and a bet size to start.", "neutral");
+      updateDisplays();
+    });
+
+    kellyBtn.addEventListener("click", () => {
+      fractionSlider.value = 20;
+      fractionLabel.textContent = "20%";
+      setMessage("Kelly fraction set to 20% for this game.", "neutral");
+    });
+
+    // initial
+    updateDisplays();
+  </script>
+</body>
+</html>
