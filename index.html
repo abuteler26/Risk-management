@@ -218,153 +218,159 @@
   </div>
 
   <script>
-    const HEADS_PROB = 0.6;
-    const START_BANKROLL = 10;
-    const MAX_ROUNDS = 100;
+  // --- Game parameters ---
+  const HEADS_PROB = 0.6;
+  const START_BANKROLL = 10;
+  const MAX_ROUNDS = 100;
 
-    let bankroll = START_BANKROLL;
-    let round = 0;
+  // --- State ---
+  let bankroll = START_BANKROLL;
+  let round = 0;
 
-    const bankrollDisplay = document.getElementById("bankrollDisplay");
-    const roundDisplay = document.getElementById("roundDisplay");
-    const fractionSlider = document.getElementById("fractionSlider");
-    const fractionLabel = document.getElementById("fractionLabel");
-    const messageEl = document.getElementById("message");
-    const logEl = document.getElementById("log");
-    const betHeadsBtn = document.getElementById("betHeadsBtn");
-    const betTailsBtn = document.getElementById("betTailsBtn");
-    const resetBtn = document.getElementById("resetBtn");
+  // --- DOM elements ---
+  const bankrollDisplay = document.getElementById("bankrollDisplay");
+  const roundDisplay = document.getElementById("roundDisplay");
+  const fractionSlider = document.getElementById("fractionSlider");
+  const fractionLabel = document.getElementById("fractionLabel");
+  const messageEl = document.getElementById("message");
+  const logEl = document.getElementById("log");
+  const betHeadsBtn = document.getElementById("betHeadsBtn");
+  const betTailsBtn = document.getElementById("betTailsBtn");
+  const resetBtn = document.getElementById("resetBtn");
 
-    function updateDisplays() {
-      bankrollDisplay.textContent = "$" + bankroll.toFixed(2);
-      roundDisplay.textContent = round;
-    }
-
-    function setMessage(text, type = "neutral") {
-      messageEl.textContent = text;
-      messageEl.className = "message " + type;
-    }
-
-    function addLogEntry({ round, choice, outcome, bet, bankrollAfter }) {
-      const row = document.createElement("div");
-      row.classList.add("log-entry");
-      row.classList.add(outcome === "WIN" ? "win" : "lose");
-      row.innerHTML = `
-        <span>#${round}</span>
-        <span>${choice}</span>
-        <span>${outcome}</span>
-        <span>Bet $${bet.toFixed(2)}</span>
-        <span>→ $${bankrollAfter.toFixed(2)}</span>
-      `;
-      logEl.prepend(row);
-    }
-
-    function endGame(reason) {
-  betHeadsBtn.disabled = true;
-  betTailsBtn.disabled = true;
-
-  if (reason === "bust") {
-    setMessage("💀 You went bust in " + round + " rounds.", "lose");
-  } else if (reason === "maxRounds") {
-    setMessage("⏱️ 100 flips done. Final bankroll: $" + bankroll.toFixed(2) + ".", "win");
-  }
-}
-
-    updateDisplays();
-
-// stop if bust
-  if (bankroll <= 0.01) {
-    bankroll = 0;
-    updateDisplays();
-    endGame("bust");
-    return;
+  // --- Helpers ---
+  function updateDisplays() {
+    bankrollDisplay.textContent = "$" + bankroll.toFixed(2);
+    roundDisplay.textContent = round;
   }
 
-// stop after 100 flips
-  if (round >= MAX_ROUNDS) {
-    endGame("maxRounds");
-    return;
+  function setMessage(text, type) {
+    if (type === undefined) type = "neutral";
+    messageEl.textContent = text;
+    messageEl.className = "message " + type;
   }
 
+  function addLogEntry(info) {
+    const row = document.createElement("div");
+    row.classList.add("log-entry");
+    row.classList.add(info.outcome === "WIN" ? "win" : "lose");
+    row.innerHTML =
+      `<span>#${info.round}</span>` +
+      `<span>${info.choice}</span>` +
+      `<span>${info.outcome}</span>` +
+      `<span>Bet $${info.bet.toFixed(2)}</span>` +
+      `<span>→ $${info.bankrollAfter.toFixed(2)}</span>`;
+    logEl.prepend(row);
+  }
 
-      const fraction = parseInt(fractionSlider.value, 10) / 100;
-      if (fraction <= 0) {
-        setMessage("Set a positive bet fraction first.", "neutral");
-        return;
-      }
-      if (fraction > 1) return;
+  function endGame(reason) {
+    betHeadsBtn.disabled = true;
+    betTailsBtn.disabled = true;
 
-      const betAmount = bankroll * fraction;
-      if (betAmount <= 0.01) {
-        setMessage("Your bet is too small to matter — increase the fraction.", "neutral");
-        return;
-      }
+    if (reason === "bust") {
+      setMessage("💀 You went bust in " + round + " rounds.", "lose");
+    } else if (reason === "maxRounds") {
+      setMessage("⏱️ 100 flips done. Final bankroll: $" + bankroll.toFixed(2) + ".", "win");
+    }
+  }
 
-      round += 1;
-
-      const flipIsHeads = Math.random() < HEADS_PROB;
-      const flipResult = flipIsHeads ? "Heads" : "Tails";
-      const guessedCorrectly =
-        (choice === "Heads" && flipIsHeads) || (choice === "Tails" && !flipIsHeads);
-
-      if (guessedCorrectly) {
-        bankroll += betAmount;
-        setMessage(`✅ ${flipResult}! You won $${betAmount.toFixed(2)}.`, "win");
-        addLogEntry({
-          round,
-          choice,
-          outcome: "WIN",
-          bet: betAmount,
-          bankrollAfter: bankroll,
-        });
-      } else {
-        bankroll -= betAmount;
-        setMessage(`❌ ${flipResult}. You lost $${betAmount.toFixed(2)}.`, "lose");
-        addLogEntry({
-          round,
-          choice,
-          outcome: "LOSE",
-          bet: betAmount,
-          bankrollAfter: bankroll,
-        });
-      }
-
+  // --- Core game logic ---
+  function playRound(choice) {
+    // if already finished, do nothing
+    if (round >= MAX_ROUNDS) {
+      endGame("maxRounds");
+      return;
+    }
+    if (bankroll <= 0.01) {
+      bankroll = 0;
       updateDisplays();
+      endGame("bust");
+      return;
+    }
 
-// stop if bust
-if (bankroll <= 0.01) {
-  bankroll = 0;
+    const fraction = parseInt(fractionSlider.value, 10) / 100;
+    if (fraction <= 0) {
+      setMessage("Set a positive bet fraction first.", "neutral");
+      return;
+    }
+    if (fraction > 1) {
+      return;
+    }
+
+    const betAmount = bankroll * fraction;
+    if (betAmount <= 0.01) {
+      setMessage("Your bet is too small to matter — increase the fraction.", "neutral");
+      return;
+    }
+
+    round += 1;
+
+    const flipIsHeads = Math.random() < HEADS_PROB;
+    const flipResult = flipIsHeads ? "Heads" : "Tails";
+    const guessedCorrectly =
+      (choice === "Heads" && flipIsHeads) ||
+      (choice === "Tails" && !flipIsHeads);
+
+    if (guessedCorrectly) {
+      bankroll += betAmount;
+      setMessage(`✅ ${flipResult}! You won $${betAmount.toFixed(2)}.`, "win");
+      addLogEntry({
+        round,
+        choice,
+        outcome: "WIN",
+        bet: betAmount,
+        bankrollAfter: bankroll
+      });
+    } else {
+      bankroll -= betAmount;
+      setMessage(`❌ ${flipResult}. You lost $${betAmount.toFixed(2)}.`, "lose");
+      addLogEntry({
+        round,
+        choice,
+        outcome: "LOSE",
+        bet: betAmount,
+        bankrollAfter: bankroll
+      });
+    }
+
+    updateDisplays();
+
+    // stop conditions after the flip
+    if (bankroll <= 0.01) {
+      bankroll = 0;
+      updateDisplays();
+      endGame("bust");
+    } else if (round >= MAX_ROUNDS) {
+      endGame("maxRounds");
+    }
+  }
+
+  // --- Event listeners ---
+  fractionSlider.addEventListener("input", function () {
+    const val = parseInt(fractionSlider.value, 10);
+    fractionLabel.textContent = val + "%";
+  });
+
+  betHeadsBtn.addEventListener("click", function () {
+    playRound("Heads");
+  });
+
+  betTailsBtn.addEventListener("click", function () {
+    playRound("Tails");
+  });
+
+  resetBtn.addEventListener("click", function () {
+    bankroll = START_BANKROLL;
+    round = 0;
+    logEl.innerHTML = "";
+    betHeadsBtn.disabled = false;
+    betTailsBtn.disabled = false;
+    setMessage("New game. Choose heads or tails and a bet size to start.", "neutral");
+    updateDisplays();
+  });
+
+  // initial render
   updateDisplays();
-  endGame("bust");
-  return;
-}
-
-// stop after 100 flips
-if (round >= MAX_ROUNDS) {
-  endGame("maxRounds");
-  return;
-}
-
-    fractionSlider.addEventListener("input", () => {
-      const val = parseInt(fractionSlider.value, 10);
-      fractionLabel.textContent = val + "%";
-    });
-
-    betHeadsBtn.addEventListener("click", () => playRound("Heads"));
-    betTailsBtn.addEventListener("click", () => playRound("Tails"));
-
-    resetBtn.addEventListener("click", () => {
-      bankroll = START_BANKROLL;
-      round = 0;
-      logEl.innerHTML = "";
-      betHeadsBtn.disabled = false;
-      betTailsBtn.disabled = false;
-      setMessage("New game. Choose heads or tails and a bet size to start.", "neutral");
-      updateDisplays();
-    });
-
-    // initial render
-    updateDisplays();
-  </script>
+</script>
 </body>
 </html>
