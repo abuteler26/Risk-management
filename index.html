@@ -194,9 +194,9 @@
         <span id="fractionLabel">20%</span>
       </div>
       <div class="btn-row">
-        <button class="secondary" type="button" id="kellyBtn">Set Kelly (20%)</button>
-        <button class="secondary" type="button" id="resetBtn">Reset Game</button>
+  	<button class="secondary" type="button" id="resetBtn">Reset Game</button>
       </div>
+
     </div>
 
     <div class="label">Make your call</div>
@@ -212,8 +212,8 @@
     <div class="log" id="log"></div>
 
     <div class="footer">
-      Tip: With p = 60% on heads and even odds, the
-      <span class="highlight">Kelly fraction</span> is ~20% on heads each round.
+      We will be doing a lot more of these kind of games here at the
+      <span class="highlight">Thematic Trading Group</span> here at the University of Chicago.
     </div>
   </div>
 
@@ -233,7 +233,6 @@
     const betHeadsBtn = document.getElementById("betHeadsBtn");
     const betTailsBtn = document.getElementById("betTailsBtn");
     const resetBtn = document.getElementById("resetBtn");
-    const kellyBtn = document.getElementById("kellyBtn");
 
     function updateDisplays() {
       bankrollDisplay.textContent = "$" + bankroll.toFixed(2);
@@ -244,116 +243,3 @@
       messageEl.textContent = text;
       messageEl.className = "message " + type;
     }
-
-    function addLogEntry({ round, choice, outcome, bet, bankrollAfter }) {
-      const row = document.createElement("div");
-      row.classList.add("log-entry");
-      row.classList.add(outcome === "WIN" ? "win" : "lose");
-      row.innerHTML = `
-        <span>#${round}</span>
-        <span>${choice}</span>
-        <span>${outcome}</span>
-        <span>Bet $${bet.toFixed(2)}</span>
-        <span>→ $${bankrollAfter.toFixed(2)}</span>
-      `;
-      logEl.prepend(row);
-    }
-
-    function endGame(win) {
-      betHeadsBtn.disabled = true;
-      betTailsBtn.disabled = true;
-      if (win) {
-        setMessage(`🎉 You reached $${bankroll.toFixed(2)} in ${round} rounds!`, "win");
-      } else {
-        setMessage(`💀 You went bust in ${round} rounds.`, "lose");
-      }
-    }
-
-    function playRound(choice) {
-      if (bankroll <= 0.01) {
-        endGame(false);
-        return;
-      }
-
-      const fraction = parseInt(fractionSlider.value, 10) / 100;
-      if (fraction <= 0) {
-        setMessage("Set a positive bet fraction first.", "neutral");
-        return;
-      }
-      if (fraction > 1) return;
-
-      const betAmount = bankroll * fraction;
-      if (betAmount <= 0.01) {
-        setMessage("Your bet is too small to matter — increase the fraction.", "neutral");
-        return;
-      }
-
-      round += 1;
-
-      const flipIsHeads = Math.random() < HEADS_PROB;
-      const flipResult = flipIsHeads ? "Heads" : "Tails";
-      const guessedCorrectly =
-        (choice === "Heads" && flipIsHeads) || (choice === "Tails" && !flipIsHeads);
-
-      if (guessedCorrectly) {
-        bankroll += betAmount; // even-money payoff
-        setMessage(`✅ ${flipResult}! You won $${betAmount.toFixed(2)}.`, "win");
-        addLogEntry({
-          round,
-          choice,
-          outcome: "WIN",
-          bet: betAmount,
-          bankrollAfter: bankroll,
-        });
-      } else {
-        bankroll -= betAmount;
-        setMessage(`❌ ${flipResult}. You lost $${betAmount.toFixed(2)}.`, "lose");
-        addLogEntry({
-          round,
-          choice,
-          outcome: "LOSE",
-          bet: betAmount,
-          bankrollAfter: bankroll,
-        });
-      }
-
-      updateDisplays();
-
-      if (bankroll >= TARGET) {
-        endGame(true);
-      } else if (bankroll <= 0.01) {
-        bankroll = 0;
-        updateDisplays();
-        endGame(false);
-      }
-    }
-
-    fractionSlider.addEventListener("input", () => {
-      const val = parseInt(fractionSlider.value, 10);
-      fractionLabel.textContent = val + "%";
-    });
-
-    betHeadsBtn.addEventListener("click", () => playRound("Heads"));
-    betTailsBtn.addEventListener("click", () => playRound("Tails"));
-
-    resetBtn.addEventListener("click", () => {
-      bankroll = START_BANKROLL;
-      round = 0;
-      logEl.innerHTML = "";
-      betHeadsBtn.disabled = false;
-      betTailsBtn.disabled = false;
-      setMessage("New game. Choose heads or tails and a bet size to start.", "neutral");
-      updateDisplays();
-    });
-
-    kellyBtn.addEventListener("click", () => {
-      fractionSlider.value = 20;
-      fractionLabel.textContent = "20%";
-      setMessage("Kelly fraction set to 20% for this game.", "neutral");
-    });
-
-    // initial
-    updateDisplays();
-  </script>
-</body>
-</html>
