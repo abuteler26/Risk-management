@@ -331,14 +331,19 @@
 
       updateDisplays();
 
-      if (bankroll >= TARGET) {
-        endGame(true);
-      } else if (bankroll <= 0.01) {
-        bankroll = 0;
-        updateDisplays();
-        endGame(false);
-      }
-    }
+// stop if bust
+if (bankroll <= 0.01) {
+  bankroll = 0;
+  updateDisplays();
+  endGame("bust");
+  return;
+}
+
+// stop after 100 flips
+if (round >= MAX_ROUNDS) {
+  endGame("maxRounds");
+  return;
+}
 
     fractionSlider.addEventListener("input", () => {
       const val = parseInt(fractionSlider.value, 10);
